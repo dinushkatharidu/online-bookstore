@@ -1,32 +1,27 @@
-import axois from "axios";
+import axios from "axios";
 
-// ============================================
-// CREATE AXIOS INSTANCE
-// ============================================
-
-const API = axois.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+// Create axios instance
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
+  timeout: 10000,
 });
 
-// ============================================
+// ========================================
 // REQUEST INTERCEPTOR
-// ============================================
-
+// ========================================
 API.interceptors.request.use(
   (config) => {
     // Get token from localStorage
     const token = localStorage.getItem("token");
 
-    // If token exists, add to headers
+    // If token exists, add to Authorization header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Return modified config
     return config;
   },
   (error) => {
@@ -34,83 +29,73 @@ API.interceptors.request.use(
   }
 );
 
-// ============================================
+// ========================================
 // RESPONSE INTERCEPTOR
-// ============================================
-
+// ========================================
 API.interceptors.response.use(
   (response) => {
-    // ON SUCCESS: Return direct data (stripping the axios container)
+    // Return only data part of response
     return response.data;
   },
   (error) => {
-    let message = "An error occurred";
-    let status = null;
-
-    // Check if error has response
+    // Handle different error scenarios
     if (error.response) {
-      status = error.response.status;
-      // Get message from backend or fallback
-      message = error.response.data?.message || "An error occurred";
+      const { status, data } = error.response;
 
-      // Handle specific status codes
-      switch (status) {
-        case 401:
-          // Unauthorized - token invalid or expired
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          message = "Session expired. Please login again";
-
-          // Redirect logic (using window.location because hooks won't work here)
-          window.location.href = "/login";
-          break;
-
-        case 403:
-          message = "You don't have permission to access this resource";
-          break;
-
-        case 404:
-          message = "Resource not found";
-          break;
-
-        case 500:
-          message = "Server error. Please try again later";
-          break;
-
-        default:
-          break;
+      // Handle 401 - Unauthorized (token expired or invalid)
+      if (status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+        return Promise.reject({
+          message: "Session expired. Please login again.",
+          status: 401,
+        });
       }
+
+      // Handle 403 - Forbidden (insufficient permissions)
+      if (status === 403) {
+        return Promise.reject({
+          message: "You do not have permission to access this resource.",
+          status: 403,
+        });
+      }
+
+      // Handle 404 - Not Found
+      if (status === 404) {
+        return Promise.reject({
+          message: "Resource not found.",
+          status: 404,
+        });
+      }
+
+      // Handle 500 - Server Error
+      if (status === 500) {
+        return Promise.reject({
+          message: "Server error. Please try again later.",
+          status: 500,
+        });
+      }
+
+      // Return API error message or default
+      return Promise.reject({
+        message: data.message || "An error occurred",
+        status,
+      });
+    } else if (error.request) {
+      // Request made but no response
+      return Promise.reject({
+        message: "No response from server.  Please check your connection.",
+        status: 0,
+      });
     } else {
-      // Network error
-      message = "Network error. Please check your connection";
+      // Error in request setup
+      return Promise.reject({
+        message: error.message || "An error occurred",
+        status: 0,
+      });
     }
-
-    // Show error message
-    console.error(`API Error: ${message}`);
-
-    //  Return error
-    return Promise.reject({ message, status });
   }
 );
 
-// ============================================
-// API METHODS
-// ============================================
-export const authAPI = {
-  register: (userData) => {
-    // userData = { name, email, password }
-    return API.post("/auth/register", userData);
-  },
-
-  login: (userData) => {
-    // userData = { email, password }
-    return API.post("/auth/login", userData);
-  },
-
-  getProfile: () => {
-    return API.get("/users/profile");
-  },
-};
-
-// Export the instance in case you need raw access elsewhere
 export default API;

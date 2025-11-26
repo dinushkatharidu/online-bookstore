@@ -289,22 +289,17 @@ const App = () => {
       <AuthProvider>
         <Routes>
           {/* ========================================
-                    // PUBLIC ROUTES
-                    // ======================================== */}
-          {/* Pages like Home, Login, and Register include their own Layout wrapper in the stubs */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* Example of public book details page (future phase) */}
-          {/* <Route path="/books/:id" element={<Layout><BookDetails /></Layout>} /> */}
-          {/* <Route path="/shop" element={<Layout><Shop /></Layout>} /> */}
-
+      DEFAULT ROUTE - LOGIN PAGE (Landing)
+      ======================================== */}
+          <Route path="/" element={<Login />} />
           {/* ========================================
-                    // PROTECTED ROUTES (Auth Required)
-                    // ======================================== */}
-          {/* ProtectedRoute component handles the authentication check and redirects if necessary. */}
-
+      PUBLIC ROUTES
+      ======================================== */}
+          <Route path="/register" element={<Register />} />
+          <Route path="/home" element={<Home />} /> {/* Home moved here */}
+          {/* ========================================
+      PROTECTED ROUTES (Auth Required)
+      ======================================== */}
           <Route
             path="/profile"
             element={
@@ -313,22 +308,9 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
-          {/* TODO: Add in Phase 4 (Cart) */}
-          {/* <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-                    <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} /> 
-                    */}
-
-          {/* TODO: Add in Phase 5 (Orders) */}
-          {/* <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-                    <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} /> 
-                    */}
-
           {/* ========================================
-                    // ADMIN ROUTES (Admin Only)
-                    // ======================================== */}
-          {/* Use adminOnly prop to add an extra layer of protection */}
-
+      ADMIN ROUTES (Admin Only)
+      ======================================== */}
           <Route
             path="/admin/dashboard"
             element={
@@ -337,12 +319,9 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
-          {/* TODO: More admin routes... */}
-
           {/* ========================================
-                    // 404 NOT FOUND (Catch all)
-                    // ======================================== */}
+      404 NOT FOUND (Catch all)
+      ======================================== */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
