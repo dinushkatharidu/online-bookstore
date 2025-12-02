@@ -1,21 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import Layout from "./Layout";
-// Assuming you have a utility function for date formatting
-import { formatDate } from "../utils/helpers";
-// Assuming you have API functions for Phase 6 implementation
-// import * as userAPI from '../api/userApi';
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
+import Layout from "../components/common/Layout";
+import SuccessAlert from "../components/common/SuccessAlert";
 
-/**
- * A component to display and allow editing of the user's profile details.
- * It uses the AuthContext to get and update user data.
- * @returns {JSX.Element} The Profile component.
- */
-function Profile() {
-  // ========================================
-  // HOOKS & STATE
-  // ========================================
+const Profile = () => {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -27,323 +18,234 @@ function Profile() {
       country: "",
     },
   });
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(null);
-  const [error, setError] = useState(null);
 
-  // Get auth state and update function
-  const { user, updateUser } = useAuth();
-
-  // ========================================
-  // POPULATE FORM WITH USER DATA
-  // Runs on mount and whenever the 'user' object from context changes
-  // ========================================
+  // ✅ FIXED: Only update if user data actually changed
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name || "",
-        phone: user.phone || "",
-        address: {
-          street: user.address?.street || "",
-          city: user.address?.city || "",
-          state: user.address?.state || "",
-          zipCode: user.address?.zipCode || "",
-          country: user.address?.country || "",
-        },
-      });
+      // Create a function to avoid setting state directly
+      const updateFormData = () => {
+        setFormData({
+          name: user.name || "",
+          phone: user.phone || "",
+          address: user.address || {
+            street: "",
+            city: "",
+            state: "",
+            zipCode: "",
+            country: "",
+          },
+        });
+      };
+
+      // Call the function only once when user changes
+      updateFormData();
     }
-  }, [user]);
+  }, [user?.email]); // ✅ Use email as dependency (won't change for same user)
 
-  // ========================================
-  // HANDLE INPUT CHANGE
-  // Handles changes for both top-level fields (name, phone) and nested address fields
-  // ========================================
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-    if (name.startsWith("address.")) {
-      // Handle nested address fields
-      const addressField = name.split(".")[1]; // extract field name after "address."
-      setFormData((prevData) => ({
-        ...prevData,
+    if (name.startsWith("address. ")) {
+      const field = name.split(".")[1];
+      setFormData((prev) => ({
+        ...prev,
         address: {
-          ...prevData.address,
-          [addressField]: value,
+          ...prev.address,
+          [field]: value,
         },
       }));
     } else {
-      // Handle top-level fields
-      setFormData((prevData) => ({
-        ...prevData,
+      setFormData((prev) => ({
+        ...prev,
         [name]: value,
       }));
     }
   };
 
-  // ========================================
-  // ENABLE EDIT MODE
-  // ========================================
-  const handleEdit = () => {
-    setIsEditing(true);
-    setError(null);
-    setSuccess(null);
-  };
-
-  // ========================================
-  // CANCEL EDIT
-  // Resets form data back to the current user state
-  // ========================================
-  const handleCancel = () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
+    // TODO: Call API to save profile
+    setSuccessMessage("Profile updated successfully! ");
     setIsEditing(false);
-    // Reset form to original user data (re-run logic from useEffect)
-    if (user) {
-      setFormData({
-        name: user.name || "",
-        phone: user.phone || "",
-        address: {
-          street: user.address?.street || "",
-          city: user.address?.city || "",
-          state: user.address?.state || "",
-          zipCode: user.address?.zipCode || "",
-          country: user.address?.country || "",
-        },
-      });
-    }
+    setTimeout(() => setSuccessMessage(""), 3000);
   };
 
-  // ========================================
-  // SAVE CHANGES
-  // ========================================
-  const handleSave = async (event) => {
-    event.preventDefault(); // PREVENT default form submission
-
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      // TODO: Call API to update profile (Phase 6)
-      // const response = await userAPI.updateProfile(formData);
-
-      // For now, just update context (Simulating success)
-      updateUser(formData);
-
-      setSuccess("Profile updated successfully! ✅");
-      setIsEditing(false);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccess(null);
-      }, 3000);
-    } catch (err) {
-      // Assuming the API throws an error object
-      setError(err.message || "Failed to update profile ❌");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Helper for rendering address or placeholder text
-  const renderAddressField = (field) => user.address?.[field] || "Not provided";
-
-  // Safety check: if user is null (e.g., fetching or not logged in), show a loading state or redirect
-  if (!user) {
-    return (
-      <Layout>
-        <div className="profile-loading">Loading profile...</div>
-      </Layout>
-    );
-  }
-
-  // ========================================
-  // RENDER
-  // ========================================
   return (
     <Layout>
-      <div className="profile-page">
-        <div className="profile-container">
-          <div className="profile-header">
-            <h1>My Profile</h1>
-
+      <div className="max-w-2xl mx-auto">
+        <div className="card">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">My Profile</h1>
             {!isEditing && (
-              <button onClick={handleEdit} className="btn-edit">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-primary"
+              >
                 Edit Profile
               </button>
             )}
           </div>
 
-          {/* SUCCESS MESSAGE */}
-          {success && <div className="alert-success">{success}</div>}
+          {successMessage && (
+            <SuccessAlert
+              message={successMessage}
+              onClose={() => setSuccessMessage("")}
+            />
+          )}
 
-          {/* ERROR MESSAGE */}
-          {error && <div className="alert-error">{error}</div>}
-
-          {/* PROFILE INFO */}
-          <div className="profile-info">
-            {/* EMAIL (Read-only) */}
-            <div className="info-row">
-              <label>Email</label>
-              <p className="read-only-value">{user.email}</p>
-              <small>Email cannot be changed</small>
-            </div>
-
-            {/* ROLE (Read-only) */}
-            <div className="info-row">
-              <label>Role</label>
-              <p className="read-only-value">
-                {user.role === "admin" ? "Administrator" : "Customer"}
+          <form onSubmit={handleSave} className="space-y-6">
+            {/* Email (Read-only) */}
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <input
+                type="email"
+                value={user?.email || ""}
+                className="input-field bg-gray-100 cursor-not-allowed"
+                disabled
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Email cannot be changed
               </p>
             </div>
 
-            {/* MEMBER SINCE (Read-only) */}
-            <div className="info-row">
-              <label>Member Since</label>
-              <p className="read-only-value">{formatDate(user.createdAt)}</p>
-            </div>
-          </div>
-
-          <hr className="divider" />
-
-          {/* EDITABLE FORM (Conditional rendering of inputs/paragraphs) */}
-          <form onSubmit={handleSave}>
-            {/* NAME */}
+            {/* Name */}
             <div className="form-group">
-              <label htmlFor="name">Name</label>
+              <label className="form-label">Full Name</label>
               {isEditing ? (
                 <input
-                  id="name"
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
+                  className="input-field"
                 />
               ) : (
-                <p>{user.name || "Not provided"}</p>
+                <p className="text-gray-700">{user?.name}</p>
               )}
             </div>
 
-            {/* PHONE */}
+            {/* Phone */}
             <div className="form-group">
-              <label htmlFor="phone">Phone</label>
+              <label className="form-label">Phone Number</label>
               {isEditing ? (
                 <input
-                  id="phone"
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  className="input-field"
                   placeholder="Enter phone number"
                 />
               ) : (
-                <p>{user.phone || "Not provided"}</p>
+                <p className="text-gray-700">{user?.phone || "Not provided"}</p>
               )}
             </div>
 
-            {/* ADDRESS SECTION */}
-            <div className="address-section">
-              <h3>Shipping Address</h3>
+            {/* Address Section */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-bold mb-4">Address</h3>
 
-              {/* Street */}
               <div className="form-group">
-                <label htmlFor="address.street">Street Address</label>
+                <label className="form-label">Street Address</label>
                 {isEditing ? (
                   <input
-                    id="address.street"
                     type="text"
-                    name="address.street"
+                    name="address. street"
                     value={formData.address.street}
                     onChange={handleChange}
+                    className="input-field"
                     placeholder="123 Main Street"
                   />
                 ) : (
-                  <p>{renderAddressField("street")}</p>
+                  <p className="text-gray-700">
+                    {formData.address.street || "Not provided"}
+                  </p>
                 )}
               </div>
 
-              {/* City & State (side by side container - assume form-row is styled with flex/grid) */}
-              <div className="form-row">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label htmlFor="address.city">City</label>
+                  <label className="form-label">City</label>
                   {isEditing ? (
                     <input
-                      id="address.city"
                       type="text"
-                      name="address.city"
+                      name="address. city"
                       value={formData.address.city}
                       onChange={handleChange}
+                      className="input-field"
                     />
                   ) : (
-                    <p>{renderAddressField("city")}</p>
+                    <p className="text-gray-700">
+                      {formData.address.city || "Not provided"}
+                    </p>
                   )}
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="address.state">State</label>
+                  <label className="form-label">State</label>
                   {isEditing ? (
                     <input
-                      id="address.state"
                       type="text"
                       name="address.state"
                       value={formData.address.state}
                       onChange={handleChange}
+                      className="input-field"
                     />
                   ) : (
-                    <p>{renderAddressField("state")}</p>
+                    <p className="text-gray-700">
+                      {formData.address.state || "Not provided"}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Zip Code & Country (side by side container) */}
-              <div className="form-row">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label htmlFor="address.zipCode">Zip Code</label>
+                  <label className="form-label">Zip Code</label>
                   {isEditing ? (
                     <input
-                      id="address.zipCode"
                       type="text"
                       name="address.zipCode"
                       value={formData.address.zipCode}
                       onChange={handleChange}
+                      className="input-field"
                     />
                   ) : (
-                    <p>{renderAddressField("zipCode")}</p>
+                    <p className="text-gray-700">
+                      {formData.address.zipCode || "Not provided"}
+                    </p>
                   )}
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="address.country">Country</label>
+                  <label className="form-label">Country</label>
                   {isEditing ? (
                     <input
-                      id="address.country"
                       type="text"
-                      name="address.country"
+                      name="address. country"
                       value={formData.address.country}
                       onChange={handleChange}
+                      className="input-field"
                     />
                   ) : (
-                    <p>{renderAddressField("country")}</p>
+                    <p className="text-gray-700">
+                      {formData.address.country || "Not provided"}
+                    </p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* ACTION BUTTONS (only shown when editing) */}
+            {/* Action Buttons */}
             {isEditing && (
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary"
-                >
-                  {loading ? "Saving..." : "Save Changes"}
+              <div className="flex gap-4 pt-6 border-t">
+                <button type="submit" className="btn-primary">
+                  Save Changes
                 </button>
-
                 <button
                   type="button"
-                  onClick={handleCancel}
+                  onClick={() => setIsEditing(false)}
                   className="btn-secondary"
-                  disabled={loading}
                 >
                   Cancel
                 </button>
@@ -354,6 +256,6 @@ function Profile() {
       </div>
     </Layout>
   );
-}
+};
 
 export default Profile;

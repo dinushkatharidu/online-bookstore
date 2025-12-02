@@ -1,156 +1,95 @@
-import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 
 const Navbar = () => {
-  // ========================================
-  // STATE
-  // ========================================
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Get auth state and navigation hook
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { isAuthenticated, user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ========================================
-  // TOGGLE MOBILE MENU
-  // ========================================
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen((prev) => !prev);
-  };
-
-  // ========================================
-  // HANDLE LOGOUT
-  // ========================================
   const handleLogout = () => {
     logout();
-    setMobileMenuOpen(false); // Close mobile menu IF open
-    navigate("/"); // Optional: Redirect to home or login page after logout
+    navigate("/login");
   };
 
-  // ========================================
-  // RENDER
-  // ========================================
   return (
-    <nav className="navbar">
-      <div className="nav-container">
-        {/* LOGO/BRAND */}
-        <Link to="/" className="nav-logo">
-          <span>📚 BookStore</span>
-        </Link>
-
-        {/* DESKTOP MENU */}
-        <div className="nav-menu desktop-menu">
-          <Link to="/" className="nav-link">
-            Home
+    // Background: Slate-950 with 90% opacity and blur for a modern "glass" feel
+    // Border: Slate-800 to separate from page content
+    <nav className="bg-slate-950/90 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50 transition-all">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo Section */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <span className="text-2xl group-hover:scale-110 transition-transform duration-200">
+              📚
+            </span>
+            <span className="text-xl font-bold text-white tracking-tight">
+              Local<span className="text-purple-500">Book</span>Exchange
+            </span>
           </Link>
-          <Link to="/shop" className="nav-link">
-            Shop
-          </Link>
 
-          {/* Conditional Links based on Authentication */}
-          {isAuthenticated ? (
-            <>
-              {/* Customer links */}
-              <Link to="/cart" className="nav-link nav-cart-icon">
-                🛒 Cart
-                {/* TODO: Add cart count badge in Phase 4 */}
-              </Link>
-
-              <Link to="/orders" className="nav-link">
-                Orders
-              </Link>
-
-              {/* Admin link */}
-              {isAdmin && (
-                <Link to="/admin/dashboard" className="nav-link nav-admin-link">
-                  Admin
+          {/* Navigation Links */}
+          <div className="flex items-center gap-6">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/"
+                  className="text-sm font-medium text-slate-300 hover:text-purple-400 transition-colors"
+                >
+                  Home
                 </Link>
-              )}
+                <Link
+                  to="/profile"
+                  className="text-sm font-medium text-slate-300 hover:text-purple-400 transition-colors"
+                >
+                  Profile
+                </Link>
 
-              {/* User dropdown/menu */}
-              {/* Note: In a real app, this would require additional state/logic for the dropdown to open */}
-              <div className="user-menu-container">
-                <button className="user-button">
-                  👤 {user?.name || "User"}
-                </button>
+                {isAdmin && (
+                  <Link
+                    to="/admin/dashboard"
+                    // distinct color for Admin to prevent accidental clicks
+                    className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors border border-red-400/20 bg-red-400/10 px-3 py-1 rounded-full"
+                  >
+                    Admin Panel
+                  </Link>
+                )}
 
-                <div className="dropdown-menu">
-                  <Link to="/profile">My Profile</Link>
-                  <Link to="/orders">My Orders</Link>
+                {/* User Section Divider */}
+                <div className="h-6 w-px bg-slate-700 mx-2"></div>
+
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-slate-400">
+                    Hi,{" "}
+                    <span className="text-white font-medium">{user?.name}</span>
+                  </span>
+
+                  {/* Logout Button: Ghost style (red accent) */}
                   <button
                     onClick={handleLogout}
-                    className="dropdown-logout-btn"
+                    className="text-sm font-medium text-slate-400 hover:text-red-400 transition-colors"
                   >
                     Logout
                   </button>
                 </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Guest links */}
-              <Link to="/login" className="nav-link">
-                Login
-              </Link>
-              <Link to="/register" className="nav-link">
-                <button className="btn btn-primary">Register</button>
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* MOBILE MENU TOGGLE BUTTON */}
-        <button className="mobile-toggle" onClick={toggleMobileMenu}>
-          {mobileMenuOpen ? "✕" : "☰"}
-        </button>
-      </div>
-
-      {/* MOBILE MENU (shown when mobileMenuOpen is true) */}
-      {mobileMenuOpen && (
-        <div className="mobile-menu">
-          <Link to="/" onClick={toggleMobileMenu}>
-            Home
-          </Link>
-          <Link to="/shop" onClick={toggleMobileMenu}>
-            Shop
-          </Link>
-
-          {/* Conditional Mobile Links */}
-          {isAuthenticated ? (
-            <>
-              <Link to="/cart" onClick={toggleMobileMenu}>
-                Cart
-              </Link>
-              <Link to="/orders" onClick={toggleMobileMenu}>
-                Orders
-              </Link>
-              <Link to="/profile" onClick={toggleMobileMenu}>
-                Profile
-              </Link>
-
-              {isAdmin && (
-                <Link to="/admin/dashboard" onClick={toggleMobileMenu}>
-                  Admin Dashboard
+              </>
+            ) : (
+              // Guest View
+              <div className="flex items-center gap-4">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                >
+                  Login
                 </Link>
-              )}
-
-              <button onClick={handleLogout} className="mobile-logout-btn">
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" onClick={toggleMobileMenu}>
-                Login
-              </Link>
-              <Link to="/register" onClick={toggleMobileMenu}>
-                Register
-              </Link>
-            </>
-          )}
+                <Link to="/register">
+                  <button className="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-800 font-medium rounded-lg text-sm px-4 py-2 transition-all shadow-lg shadow-purple-900/20">
+                    Register
+                  </button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 };

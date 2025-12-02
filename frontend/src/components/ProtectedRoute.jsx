@@ -1,34 +1,12 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+const Loading = () => {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
+        <p className="text-gray-600 font-medium">Loading...</p>
+      </div>
+    </div>
+  );
+};
 
-// ============================================
-// PROTECTED ROUTE COMPONENT
-// ============================================
-
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
-
-  // ============================================
-  // ACCESS CONTROL LOGIC
-  // ============================================
-
-  // STEP 1: If still loading, show loading screen
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  // STEP 2: If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // STEP 3: If admin only route and user is not admin, redirect
-  if (adminOnly && !isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  // STEP 4: User is authorized, render children
-  return children;
-}
-
-export default ProtectedRoute;
+export default Loading;

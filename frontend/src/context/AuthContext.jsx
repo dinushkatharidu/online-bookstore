@@ -1,96 +1,55 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { authAPI } from "../utils/api";
-import { useNavigate } from "react-router-dom";
-
-// ============================================
-// CREATE CONTEXT
-// ============================================
-
-const AuthContext = createContext();
-
-// ============================================
-// CUSTOM HOOK TO USE CONTEXT
-// ============================================
+import { createContext, useState, useEffect } from "react";
+import authService from "../services/authService";
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-
-  if (context === undefined) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-
-  return context;
-};
-
-// ============================================
-// AUTH PROVIDER COMPONENT
-// ============================================
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // state variables
+  // ========================================
+  // STATE
+  // ========================================
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const navigate = useNavigate();
-
   // ========================================
-  // CHECK AUTH ON MOUNT
+  // ON MOUNT - CHECK IF USER IS ALREADY LOGGED IN
   // ========================================
-
   useEffect(() => {
-    const checkAuth = () => {
-      const storedToken = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+    const storedUser = authService.getUser();
+    const storedToken = authService.getToken();
 
-      if (storedToken && storedUser) {
-        try {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.error("Error parsing user data", error);
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-        }
-      }
-      setLoading(false);
-    };
-    checkAuth();
+    if (storedUser && storedToken) {
+      setUser(storedUser);
+      setToken(storedToken);
+    }
+
+    setLoading(false);
   }, []);
 
   // ========================================
   // REGISTER FUNCTION
   // ========================================
-  const register = async (userData) => {
+  const register = async (formData) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
+      const response = await authService.register(formData);
 
-      // STEP 1: Call API
-      const response = await authAPI.register(userData);
+      setUser(response.user);
+      setToken(response.token);
 
-      // STEP 2: Extract data (Assuming response returns data object)
-      const { token: newToken, user: newUser } = response;
-
-      // STEP 3: Store in localStorage
-      localStorage.setItem("token", newToken);
-      localStorage.setItem("user", JSON.stringify(newUser));
-
-      // STEP 4: Update state
-      setToken(newToken);
-      setUser(newUser);
-
-      // STEP 5: Navigate to home
-      navigate("/");
-
-      // STEP 6: Show success message
-      alert("Registration successful!"); // Using alert for "DISPLAY"
+      return {
+        success: true,
+        message: "Registration successful! ",
+        user: response.user,
+      };
     } catch (err) {
       const errorMessage = err.message || "Registration failed";
       setError(errorMessage);
-      alert(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -99,38 +58,25 @@ export const AuthProvider = ({ children }) => {
   // ========================================
   // LOGIN FUNCTION
   // ========================================
-  const login = async (userData) => {
+  const login = async (credentials) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
+      const response = await authService.login(credentials);
 
-      // STEP 1: Call API
-      const response = await authAPI.login(userData);
+      setUser(response.user);
+      setToken(response.token);
 
-      // STEP 2: Extract data
-      const { token: newToken, user: newUser } = response;
-
-      // STEP 3: Store in localStorage
-      localStorage.setItem("token", newToken);
-      localStorage.setItem("user", JSON.stringify(newUser));
-
-      // STEP 4: Update state
-      setToken(newToken);
-      setUser(newUser);
-
-      // STEP 5: Navigate based on role
-      if (newUser.role === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/");
-      }
-
-      // STEP 6: Show success message
-      alert("Login successful!");
+      return {
+        success: true,
+        message: "Login successful!",
+        user: response.user,
+      };
     } catch (err) {
       const errorMessage = err.message || "Login failed";
       setError(errorMessage);
-      alert(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -140,34 +86,10 @@ export const AuthProvider = ({ children }) => {
   // LOGOUT FUNCTION
   // ========================================
   const logout = () => {
-    // STEP 1: Clear localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    // STEP 2: Clear state
-    setToken(null);
+    authService.logout();
     setUser(null);
+    setToken(null);
     setError(null);
-
-    // STEP 3: Navigate to login
-    navigate("/login");
-
-    // STEP 4: Show message
-    alert("Logged out successfully");
-  };
-
-  // ========================================
-  // UPDATE USER FUNCTION
-  // ========================================
-  const updateUser = (updatedUserData) => {
-    // Merge updated data with existing user
-    const newUser = { ...user, ...updatedUserData };
-
-    // Update state
-    setUser(newUser);
-
-    // Update localStorage
-    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   // ========================================
@@ -180,9 +102,9 @@ export const AuthProvider = ({ children }) => {
   // ========================================
   // COMPUTED VALUES
   // ========================================
-  // Using double bang (!!) to cast to boolean
-  const isAuthenticated = !!(token && user);
-  const isAdmin = !!(user && user.role === "admin");
+  const isAuthenticated = !!token && !!user;
+  const isAdmin = user?.role === "admin";
+  const isCustomer = user?.role === "customer";
 
   // ========================================
   // CONTEXT VALUE
@@ -194,19 +116,12 @@ export const AuthProvider = ({ children }) => {
     error,
     isAuthenticated,
     isAdmin,
+    isCustomer,
     register,
     login,
     logout,
-    updateUser,
     clearError,
   };
-
-  // ========================================
-  // RENDER PROVIDER
-  // ========================================
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
