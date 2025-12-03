@@ -31,6 +31,13 @@ exports.registerUser = async (req, res) => {
       });
     }
 
+    // Create new user
+    const newUser = new User({
+      name,
+      email,
+      password,
+    });
+
     await newUser.save();
 
     const token = newUser.generateAuthToken();
@@ -74,16 +81,15 @@ exports.logingUser = async (req, res) => {
     }
 
     // find user by email
-    const user = await User.findOne({ email: email });
-
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalied credentials",
+        message: "Invalid email or password",
       });
     }
 
-    // compare password
+    // ✅ USE INSTANCE METHOD
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
@@ -104,7 +110,7 @@ exports.logingUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: useTransition.role,
+        role: user.role,
       },
     });
   } catch (error) {

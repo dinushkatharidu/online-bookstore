@@ -68,16 +68,14 @@ userSchema.pre('save', async function(next) {
 });
 
 // --- INSTANCE METHOD: Compare Password ---
-userSchema.methods.comparepassword = async function(candidatePassword) {
-    try {
-        const isMatch = await bcrypt.compare(candidatePassword, this.password);
-        return isMatch;
-    } catch (error) {
-        throw new Error(error);
-    }
-}   
-
-
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    return isMatch;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
 
 // --- INSTANCE METHOD: Generate JWT ---
 userSchema.methods.generateAuthToken = function(){
@@ -97,16 +95,18 @@ userSchema.methods.generateAuthToken = function(){
 // --- INSTANCE METHOD: toJSON (Sanitize Output) ---
 // This method is called automatically when Express sends the response
 
-userSchema.methods.toJSON() = function() {
-    const userObject = this.toObject();
+userSchema.methods.toJSON = function () {
+  const userObject = this.toObject();
 
-    delete userObject.password;
-    delete userObject.__v;
+  // Remove sensitive stuff
+  delete userObject.password;
+  delete userObject.__v;
 
-    return userObject;
+  return userObject;
 };
 
-const User = mongoose.model(userSchema);
+// Create the model (name + schema)
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;
 

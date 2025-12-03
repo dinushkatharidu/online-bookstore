@@ -2,7 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/database");
-
+const authRoutes = require("./routes/authRoutes");
 // load environment variable
 dotenv.config();
 
@@ -19,6 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files
 app.use("/uploads", express.static("uploads"));
+
+app.use("/api/auth", authRoutes);
 
 // Basic test route
 app.get("/", (req, res) => {
