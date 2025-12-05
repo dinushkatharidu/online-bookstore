@@ -13,8 +13,8 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Please prvide an email"],
-      uniqe: true,
+      required: [true, "Please provide an email"],
+      unique: true,
       lowercase: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
@@ -25,88 +25,44 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please provide a password"],
       minlength: 6,
-      select: false,
+      select: false, // do not return password by default
     },
+    // 🔹 ROLE FIELD – buyer / seller / admin
     role: {
       type: String,
-      enum: ["customer", "admin"],
-      default: "customer",
-    },
-    address: {
-      street: { type: String },
-      city: { type: String },
-      state: { type: String },
-      zipcode: { type: String },
-      country: { type: String },
-    },
-    phone: {
-      type: String,
-      match: [
-        /^[0-9]{10,15}$/,
-        "Phone number must be between 10 and 15 digits",
-      ],
+      enum: ["buyer", "seller", "admin"],
+      default: "buyer",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// --- PRE-SAVE HOOK ---
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
-userSchema.pre('save', async function(next) {
-    if(!this.isModified('password')){
-        return next();
-    }
-    try{
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    }catch(error){
-        next(error);
-    }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-// --- INSTANCE METHOD: Compare Password ---
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  try {
-    const isMatch = await bcrypt.compare(candidatePassword, this.password);
-    return isMatch;
-  } catch (error) {
-    throw new Error(error);
-  }
+// Compare passwords
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// --- INSTANCE METHOD: Generate JWT ---
-userSchema.methods.generateAuthToken = function(){
-    const payload = {
-        userId: this._id,
-        role: this.role
-    };
-    const token = jwt.sign(
-        payload, 
-        process.env.JWT_SECRET,
-        {expiresIn: process.env.JWT_EXPIRE || '30d'}
-    );
-    return token;
-}
-
-
-// --- INSTANCE METHOD: toJSON (Sanitize Output) ---
-// This method is called automatically when Express sends the response
-
-userSchema.methods.toJSON = function () {
-  const userObject = this.toObject();
-
-  // Remove sensitive stuff
-  delete userObject.password;
-  delete userObject.__v;
-
-  return userObject;
+// Generate JWT
+userSchema.methods.getSignedJwtToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+      role: this.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 };
 
-// Create the model (name + schema)
 const User = mongoose.model("User", userSchema);
 
 module.exports = User;
-

@@ -1,124 +1,95 @@
+// backend/controllers/authController.js
 const User = require("../models/User");
 
-// ============================================
-// 1. REGISTER USER
-// ============================================
+// Helper to send token + user data
+const sendTokenResponse = (user, statusCode, res) => {
+  const token = user.getSignedJwtToken();
 
+  res.status(statusCode).json({
+    success: true,
+    token,
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+};
+
+// ============================================
+// REGISTER
+// ============================================
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    let { name, email, password, role } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
+    // Only allow these roles from client
+    const allowedRoles = ["buyer", "seller"];
+    if (!allowedRoles.includes(role)) {
+      role = "buyer";
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters",
-      });
-    }
-
-    const existingUser = await User.findOne({ email: email });
-
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already registered",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
     }
 
-    // Create new user
-    const newUser = new User({
+    const user = await User.create({
       name,
       email,
       password,
+      role,
     });
 
-    await newUser.save();
-
-    const token = newUser.generateAuthToken();
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      token,
-      user: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
-  } catch (error) {
-    console.error(error);
+    sendTokenResponse(user, 201, res);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
       success: false,
-      message: "Server Error",
-      error: error.message,
+      message: "Server error",
     });
   }
 };
 
 // ============================================
-// 2. LOGIN USER
+// LOGIN
 // ============================================
-
-exports.logingUser = async (req, res) => {
+exports.loginUser = async (req, res) => {
   try {
-    // extract data
     const { email, password } = req.body;
 
-    // valdate input
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide email and password" });
     }
 
-    // find user by email
+    // Select +password explicitly
     const user = await User.findOne({ email }).select("+password");
+
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
-    // ✅ USE INSTANCE METHOD
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
-    // generate jwt token
-    const token = user.generateAuthToken();
-
-    res.status(200).json({
-      success: true,
-      message: "Login Successful",
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error(error);
+    sendTokenResponse(user, 200, res);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
       success: false,
-      message: "Server Error",
-      error: error.message,
+      message: "Server error",
     });
   }
 };

@@ -3,6 +3,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/database");
 const authRoutes = require("./routes/authRoutes");
+const bookRoutes = require("./routes/bookRoutes");
+
 // load environment variable
 dotenv.config();
 
@@ -15,6 +17,10 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+app.use("/api/auth", authRoutes);
+app.use("/api/books", bookRoutes);
+
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files
