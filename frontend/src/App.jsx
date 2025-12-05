@@ -1,61 +1,44 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-
-// Components
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-
-// Pages
+import { CartProvider } from "./context/CartContext";
+import Navbar from "./components/common/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import Cart from "./pages/Cart";
+import SellerDashboard from "./pages/SellerDashboard";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import Footer from "./components/common/Footer";
 
-function App() {
+const App = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* ========================================
-              PUBLIC ROUTES
-              ======================================== */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+    <AuthProvider>
+      <CartProvider>
+        <Router>
+          <div className="min-h-screen bg-slate-950 text-slate-50">
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/cart" element={<Cart />} />
 
-          {/* ========================================
-              PROTECTED ROUTES (Auth Required)
-              ======================================== */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* ========================================
-              ADMIN ROUTES (Admin Only)
-              ======================================== */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* ========================================
-              404 NOT FOUND
-              ======================================== */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+              <Route
+                path="/seller"
+                element={
+                  <ProtectedRoute allowedRoles={["seller"]}>
+                    <SellerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+            <Footer />
+          </div>
+        </Router>
+      </CartProvider>
+    </AuthProvider>
   );
-}
+};
 
 export default App;

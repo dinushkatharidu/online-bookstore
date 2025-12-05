@@ -1,19 +1,21 @@
-import React from 'react'
+import React from "react";
 
 const Footer = () => {
   return (
-    <div class="bg-gray-900">
-      <div class="max-w-7xl mx-auto text-white py-4 px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row md:justify-between items-center text-sm text-gray-400">
-          <p class="order-2 md:order-1 mt-3 md:mt-0">
+    // Outer container: dark background, subtle top border (common for footers)
+    <footer className="bg-slate-950 border-t border-slate-800 py-4">
+      {/* Inner container: max width, centered, padding */}
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Content wrapper: centered text */}
+        <div className="flex justify-center items-center">
+          {/* Copyright Text: small, muted color, centered */}
+          <p className="text-xs text-slate-500 py-1">
             &copy; 2025 ASDT, Inc. All rights reserved.
           </p>
-
-          
         </div>
       </div>
-    </div>
+    </footer>
   );
-}
+};
 
-export default Footer
+export default Footer;

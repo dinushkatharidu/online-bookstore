@@ -1,77 +1,93 @@
-import { Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import Layout from "../components/common/Layout";
+// frontend/src/pages/Home.jsx
+import { useEffect, useState } from "react";
+import api from "../api/axios";
+import { useCart } from "../context/CartContext";
 
 const Home = () => {
-  const { isAuthenticated, user } = useAuth();
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get("/books");
+        if (res.data.success) {
+          setBooks(res.data.data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+        Loading books...
+      </div>
+    );
+  }
 
   return (
-    <Layout>
-      <div className="space-y-12">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white rounded-xl p-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Welcome to BookStore
-          </h1>
-          <p className="text-lg md:text-xl mb-8 opacity-90">
-            {isAuthenticated
-              ? `Welcome back, ${user?.name}!  Discover your next great read.`
-              : "Discover thousands of books at unbeatable prices"}
-          </p>
+    <div className="min-h-screen bg-slate-950 text-slate-50 px-4 py-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-2xl font-semibold mb-2">Online Book Marketplace</h1>
+        <p className="text-sm text-slate-400 mb-6">
+          Browse books from different sellers and add them to your cart.
+        </p>
 
-          {!isAuthenticated && (
-            <div className="flex gap-4 justify-center">
-              <Link to="/login">
-                <button className="bg-white text-primary-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition">
-                  Login
-                </button>
-              </Link>
-              <Link to="/register">
-                <button className="bg-primary-700 text-white px-8 py-3 rounded-lg font-bold hover:bg-primary-900 transition border-2 border-white">
-                  Register
-                </button>
-              </Link>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {books.map((book) => (
+            <div
+              key={book._id}
+              className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col"
+            >
+              {book.imageUrl && (
+                <img
+                  src={book.imageUrl}
+                  alt={book.title}
+                  className="w-full h-40 object-cover rounded-xl mb-3"
+                />
+              )}
+              <div className="flex-1">
+                <h2 className="text-base font-semibold mb-1">{book.title}</h2>
+                <p className="text-xs text-slate-400 mb-1">{book.author}</p>
+                <p className="text-sm text-purple-300 font-semibold mb-1">
+                  LKR {book.price}
+                </p>
+                {book.category && (
+                  <p className="text-xs text-slate-400 mb-1">
+                    Category: {book.category}
+                  </p>
+                )}
+                <p className="text-xs text-slate-400 line-clamp-3">
+                  {book.description}
+                </p>
+                {book.seller && (
+                  <p className="text-[11px] text-slate-500 mt-2">
+                    Seller: {book.seller.name} ({book.seller.email})
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => addToCart(book)}
+                className="mt-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-3 py-2"
+              >
+                Add to cart
+              </button>
             </div>
+          ))}
+
+          {books.length === 0 && (
+            <p className="text-sm text-slate-400">No books available yet.</p>
           )}
         </div>
-
-        {/* Features Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="card text-center">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-xl font-bold mb-2">Vast Collection</h3>
-            <p className="text-gray-600">
-              Thousands of books across all genres
-            </p>
-          </div>
-
-          <div className="card text-center">
-            <div className="text-4xl mb-4">💰</div>
-            <h3 className="text-xl font-bold mb-2">Best Prices</h3>
-            <p className="text-gray-600">Competitive pricing and great deals</p>
-          </div>
-
-          <div className="card text-center">
-            <div className="text-4xl mb-4">🚚</div>
-            <h3 className="text-xl font-bold mb-2">Fast Delivery</h3>
-            <p className="text-gray-600">Quick and reliable shipping</p>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        {isAuthenticated && (
-          <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Ready to explore?</h2>
-            <p className="text-gray-600 mb-6">
-              Browse our collection and find your next favorite book
-            </p>
-            <Link to="/shop">
-              <button className="btn-primary">Browse Books</button>
-            </Link>
-          </div>
-        )}
       </div>
-    </Layout>
+    </div>
   );
 };
 

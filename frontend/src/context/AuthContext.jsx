@@ -1,127 +1,96 @@
-import { createContext, useState, useEffect } from "react";
-import authService from "../services/authService";
+// frontend/src/context/AuthContext.jsx
+import { createContext, useContext, useState } from "react";
+import api from "../api/axios";
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const AuthContext = createContext();
+const AuthContext = createContext(null);
+
+// Helper: read initial auth state from localStorage
+const getInitialAuthState = () => {
+  if (typeof window === "undefined") {
+    return { user: null, token: null };
+  }
+
+  const storedToken = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
+
+  if (storedToken && storedUser) {
+    try {
+      return {
+        token: storedToken,
+        user: JSON.parse(storedUser),
+      };
+    } catch (e) {
+      console.error("Failed to parse stored user", e);
+      return { user: null, token: null };
+    }
+  }
+
+  return { user: null, token: null };
+};
 
 export const AuthProvider = ({ children }) => {
-  // ========================================
-  // STATE
-  // ========================================
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const initial = getInitialAuthState();
 
-  // ========================================
-  // ON MOUNT - CHECK IF USER IS ALREADY LOGGED IN
-  // ========================================
-  useEffect(() => {
-    const storedUser = authService.getUser();
-    const storedToken = authService.getToken();
+  const [user, setUser] = useState(initial.user); // initialized from localStorage
+  const [token, setToken] = useState(initial.token); // initialized from localStorage
+  const [loading] = useState(false); // no async init → no need to toggle
 
-    if (storedUser && storedToken) {
-      setUser(storedUser);
-      setToken(storedToken);
+  const login = async (email, password) => {
+    const res = await api.post("/auth/login", { email, password });
+
+    if (res.data.success) {
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setToken(res.data.token);
+      setUser(res.data.user);
     }
 
-    setLoading(false);
-  }, []);
-
-  // ========================================
-  // REGISTER FUNCTION
-  // ========================================
-  const register = async (formData) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await authService.register(formData);
-
-      setUser(response.user);
-      setToken(response.token);
-
-      return {
-        success: true,
-        message: "Registration successful! ",
-        user: response.user,
-      };
-    } catch (err) {
-      const errorMessage = err.message || "Registration failed";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return res.data;
   };
 
-  // ========================================
-  // LOGIN FUNCTION
-  // ========================================
-  const login = async (credentials) => {
-    setLoading(true);
-    setError(null);
+  const register = async (name, email, password, role) => {
+    const res = await api.post("/auth/register", {
+      name,
+      email,
+      password,
+      role,
+    });
 
-    try {
-      const response = await authService.login(credentials);
-
-      setUser(response.user);
-      setToken(response.token);
-
-      return {
-        success: true,
-        message: "Login successful!",
-        user: response.user,
-      };
-    } catch (err) {
-      const errorMessage = err.message || "Login failed";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
+    if (res.data.success) {
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setToken(res.data.token);
+      setUser(res.data.user);
     }
+
+    return res.data;
   };
 
-  // ========================================
-  // LOGOUT FUNCTION
-  // ========================================
   const logout = () => {
-    authService.logout();
-    setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setToken(null);
-    setError(null);
+    setUser(null);
   };
 
-  // ========================================
-  // CLEAR ERROR FUNCTION
-  // ========================================
-  const clearError = () => {
-    setError(null);
-  };
-
-  // ========================================
-  // COMPUTED VALUES
-  // ========================================
-  const isAuthenticated = !!token && !!user;
-  const isAdmin = user?.role === "admin";
-  const isCustomer = user?.role === "customer";
-
-  // ========================================
-  // CONTEXT VALUE
-  // ========================================
-  const value = {
-    user,
-    token,
-    loading,
-    error,
-    isAuthenticated,
-    isAdmin,
-    isCustomer,
-    register,
-    login,
-    logout,
-    clearError,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated: !!user,
+        isSeller: user?.role === "seller",
+        isBuyer: user?.role === "buyer",
+        login,
+        register,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = () => useContext(AuthContext);
