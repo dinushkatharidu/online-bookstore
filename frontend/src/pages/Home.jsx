@@ -1,4 +1,3 @@
-// frontend/src/pages/Home.jsx
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
