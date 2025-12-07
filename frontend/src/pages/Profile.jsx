@@ -40,7 +40,7 @@ const Profile = () => {
       // Call the function only once when user changes
       updateFormData();
     }
-  }, [user?.email]); // ✅ Use email as dependency (won't change for same user)
+  }, [user?.email]); 
 
   const handleChange = (e) => {
     const { name, value } = e.target;

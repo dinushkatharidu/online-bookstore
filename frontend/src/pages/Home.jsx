@@ -43,13 +43,13 @@ const Home = () => {
           {books.map((book) => (
             <div
               key={book._id}
-              className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col"
+              className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col "
             >
               {book.imageUrl && (
                 <img
                   src={book.imageUrl}
                   alt={book.title}
-                  className="w-full h-40 object-cover rounded-xl mb-3"
+                  className="max-h-90 object-contain rounded-xl w-full max-w-xs  "
                 />
               )}
               <div className="flex-1">

@@ -30,18 +30,19 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link
-            to="/cart"
-            className="relative text-xs text-slate-300 hover:text-slate-100"
-          >
-            Cart
-            {cartCount > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-semibold rounded-full bg-purple-600 text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
+          {!isSeller && (
+            <Link
+              to="/cart"
+              className="relative text-xs text-slate-300 hover:text-slate-100"
+            >
+              Cart
+              {cartCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-semibold rounded-full bg-purple-600 text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
           {user ? (
             <>
               <span className="text-xs text-slate-400">

@@ -1,7 +1,10 @@
 import { useCart } from "../context/CartContext";
+import { useState } from "react";
+import PaymentSection from "../components/checkout/PaymentSection";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 px-4 py-6">
@@ -15,6 +18,7 @@ const Cart = () => {
           <p className="text-sm text-slate-400">Your cart is empty.</p>
         ) : (
           <>
+            {/* Cart items */}
             <div className="space-y-3 mb-4">
               {items.map((item) => (
                 <div
@@ -52,6 +56,7 @@ const Cart = () => {
               ))}
             </div>
 
+            {/* Summary + buttons */}
             <div className="flex items-center justify-between border-t border-slate-800 pt-3">
               <p className="text-sm text-slate-300">
                 Total:{" "}
@@ -60,17 +65,39 @@ const Cart = () => {
                 </span>
               </p>
               <div className="flex gap-2">
-                <button
-                  onClick={clearCart}
-                  className="text-xs border border-slate-600 rounded-lg px-3 py-1 text-slate-200"
-                >
-                  Clear cart
-                </button>
-                <button className="text-xs bg-purple-600 hover:bg-purple-700 rounded-lg px-3 py-1 text-white font-medium">
-                  Checkout (demo)
-                </button>
+                <div className="flex items-center justify-between mt-4 gap-2">
+                  <button
+                    onClick={clearCart}
+                    disabled={isCheckingOut}
+                    className={`text-xs rounded-lg px-3 py-1 font-medium border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 transition ${
+                      isCheckingOut ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    Clear cart
+                  </button>
+
+                  <button
+                    onClick={() => setIsCheckingOut(true)}
+                    disabled={isCheckingOut || items.length === 0}
+                    className={`text-xs rounded-lg px-3 py-1 font-medium bg-purple-600 hover:bg-purple-700 text-white shadow-sm shadow-purple-900/40 transition ${
+                      isCheckingOut ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {isCheckingOut ? "Checkout in progress..." : "Checkout"}
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* 👉 Payment form appears here when checking out */}
+            {isCheckingOut && (
+              <PaymentSection
+                onClose={() => {
+                  // this is called when user clicks Cancel in PaymentSection
+                  setIsCheckingOut(false);
+                }}
+              />
+            )}
           </>
         )}
       </div>
