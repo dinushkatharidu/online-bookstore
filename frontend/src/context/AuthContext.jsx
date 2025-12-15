@@ -2,7 +2,9 @@
 import { createContext, useContext, useState } from "react";
 import api from "../api/axios";
 
-const AuthContext = createContext(null);
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext(null);
+
 
 // Helper: read initial auth state from localStorage
 const getInitialAuthState = () => {
@@ -31,9 +33,9 @@ const getInitialAuthState = () => {
 export const AuthProvider = ({ children }) => {
   const initial = getInitialAuthState();
 
-  const [user, setUser] = useState(initial.user); // initialized from localStorage
-  const [token, setToken] = useState(initial.token); // initialized from localStorage
-  const [loading] = useState(false); // no async init → no need to toggle
+  const [user, setUser] = useState(initial.user); 
+  const [token, setToken] = useState(initial.token); 
+  const [loading] = useState(false); 
 
   const login = async (email, password) => {
     const res = await api.post("/auth/login", { email, password });
