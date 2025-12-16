@@ -1,4 +1,3 @@
-// backend/controllers/authController.js
 const User = require("../models/User");
 
 // Helper to send token + user data
@@ -67,7 +66,7 @@ exports.loginUser = async (req, res) => {
         .json({ success: false, message: "Please provide email and password" });
     }
 
-    // Select +password explicitly
+    // Select password explicitly
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
